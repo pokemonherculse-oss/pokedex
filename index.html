@@ -288,7 +288,7 @@ function detail(e){
 <div class="stage">
 <aside class="ls">
 <div class="gl rise" style="--i:0"><div class="gh"><span>EV Points</span><span class="ect"><b class="es">${es}</b> / 66</span></div>${rows}
-<div class="etot rise" style="--i:7"><span>Total</span><span><span class="tv v" data-v="${sum}" data-d="1200">${sum}</span><small class="td">${sum>base?'+'+(sum-base):''}</small></span></div>
+<div class="etot rise" style="--i:7"><span>Total <small class="bstn">Base ${bst}</small></span><span><span class="tv v" data-v="${sum}" data-d="1200">${sum}</span><small class="td">${sum>base?'+'+(sum-base):''}</small></span></div>
 <div class="evt rise" style="--i:8"><i class="mt"><b style="transform:scaleX(${es/66})"></b></i><div class="pr"><button data-p="reset">Reset</button><button data-p="phys">Physical</button><button data-p="spec">Special</button><button data-p="bulk">Bulky</button></div></div>
 </div>
 <div class="gl nat rise" style="--i:9"><div class="gh"><span>Nature</span><span class="nm">±10%</span></div>
@@ -309,7 +309,7 @@ function wireEV(){
   const p=ov&&ov.querySelector('.panel');if(!p)return;
   const e=curE,d=e.data,ev=EVS[e.id]||(EVS[e.id]=[0,0,0,0,0,0]);let nat=NS[e.id]||0;
   const rows=[...p.querySelectorAll('.er')],natBox=p.querySelector('.nat');
-  const tw=(el,to)=>{const from=+el.dataset.v||0;el.dataset.v=to;cancelAnimationFrame(el._r);
+  const tw=(el,to)=>{el._u=1;const from=+el.dataset.v||0;el.dataset.v=to;cancelAnimationFrame(el._r);
     if(from===to){el.textContent=to;return}
     const t0=performance.now(),f=t=>{const k=Math.min(1,(t-t0)/260);el.textContent=Math.round(from+(to-from)*(1-Math.pow(1-k,3)));if(k<1)el._r=requestAnimationFrame(f)};
     el._r=requestAnimationFrame(f)};
@@ -349,7 +349,7 @@ function countUp(){
   ov.querySelectorAll('.v').forEach(el=>{
     const v=+el.dataset.v,d=+el.dataset.d||0;if(calm){el.textContent=v;return}
     el.textContent='0';const t0=performance.now()+d;
-    const f=t=>{if(!el.isConnected)return;const k=Math.min(1,Math.max(0,(t-t0)/900));el.textContent=Math.round(v*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(f)};
+    const f=t=>{if(!el.isConnected||el._u)return;const k=Math.min(1,Math.max(0,(t-t0)/900));el.textContent=Math.round(+el.dataset.v*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(f)};
     requestAnimationFrame(f);
   });
 }
@@ -662,4 +662,4 @@ img[src*="animated"]{image-rendering:pixelated}
 .dx .ng button.neu{background:#d3d5e6;color:#667}
 .dx .ng button.on{background:var(--yel);color:#222}
 </style>
-</body></html>
+<style>.dx .bstn{font-size:.7rem;font-weight:600;opacity:.7;margin-left:6px}</style></body></html>
