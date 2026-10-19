@@ -260,26 +260,26 @@ function bar(){
   const p=document.createElement('span');p.id='prog';p.className='prog';b.append(p);prog();
 }
 let ov=null,cur=null,curE=null,busy=false,stepping=false,queued=0;
-const EVS=(()=>{try{return JSON.parse(localStorage.getItem('evs1')||'{}')}catch(x){return{}}})();
-let LV=+localStorage.getItem('lvl1')||50;
-const saveEV=()=>{try{localStorage.setItem('evs1',JSON.stringify(EVS));localStorage.setItem('lvl1',LV)}catch(x){}};
+const EVS=(()=>{try{return JSON.parse(localStorage.getItem('evs2')||'{}')}catch(x){return{}}})();
+const LV=50;
+const saveEV=()=>{try{localStorage.setItem('evs2',JSON.stringify(EVS));0}catch(x){}};
 const calcS=(n,b,ev,lv)=>{const x=Math.floor((2*b+31+Math.floor(ev/4))*lv/100);return n===0?(b===1?1:x+lv+10):x+5};
-const REF=lv=>[0,1,2,3,4,5].map(n=>calcS(n,n===0?255:200,252,lv));
+const REF=lv=>[0,1,2,3,4,5].map(n=>calcS(n,n===0?255:200,0,lv)+32);
 function detail(e){
   const d=e.data,ty=d.ty,c1=TC[ty[0]],c2=TC[ty[1]||ty[0]],ev=EVS[e.id]||(EVS[e.id]=[0,0,0,0,0,0]),ref=REF(LV);
   const cs=[...document.querySelectorAll('.card')],ci=cs.findIndex(c=>c._e===e),L=cs.length;
   const nb=k=>{if(ci<0)return'';const x=cs[(ci+k+L)%L]._e;return x.data?`<img alt="" src="${sprite(x)||''}">`:''};
   let sum=0,base=0,es=0;
   const rows=STATS.map(([k,l],n)=>{
-    const f=calcS(n,d.st[n],ev[n],LV),f0=calcS(n,d.st[n],0,LV);sum+=f;base+=f0;es+=ev[n];
-    return `<div class="sr rise" style="--i:${n+1};--b:${(f0/ref[n]*100).toFixed(1)};--g:${(f/ref[n]*100).toFixed(1)}" data-n="${n}"><span class="sl">${l}</span><div class="bw"><i class="g"></i><i class="b"></i></div><span class="sv"><span class="v" data-v="${f}" data-d="${500+n*90}">${f}</span><small class="dl">${f>f0?'+'+(f-f0):''}</small></span><span class="evn">${ev[n]}</span><input type="range" min="0" max="252" step="4" value="${ev[n]}" aria-label="${l} EVs" style="--p:${ev[n]/252*100}%"></div>`}).join('');
+    const f=calcS(n,d.st[n],0,LV)+ev[n],f0=calcS(n,d.st[n],0,LV);sum+=f;base+=f0;es+=ev[n];
+    return `<div class="sr rise" style="--i:${n+1};--b:${(f0/ref[n]*100).toFixed(1)};--g:${(f/ref[n]*100).toFixed(1)}" data-n="${n}"><span class="sl">${l}</span><div class="bw"><i class="g"></i><i class="b"></i></div><span class="sv"><span class="v" data-v="${f}" data-d="${500+n*90}">${f}</span><small class="dl">${f>f0?'+'+(f-f0):''}</small></span><span class="evn">${ev[n]}</span><input type="range" min="0" max="32" step="1" value="${ev[n]}" aria-label="${l} EVs" style="--p:${ev[n]/32*100}%"></div>`}).join('');
   const chips=ty.map(t=>`<span class="t" style="background:${TC[t]}">${t}</span>`).join('');
   const bst=d.st.reduce((a,b)=>a+b,0);
   return `<div class="panel dx" data-bst="${bst}" style="--c:${c1};background:radial-gradient(ellipse at 50% 42%,${c1}66,transparent 62%),radial-gradient(circle at 12% 95%,${c2}44,transparent 50%),linear-gradient(160deg,#2b2466,#16204f 60%,#1b1840)">
 <div class="stage">
-<aside class="gl rise" style="--i:0"><div class="gh"><span>Stats &amp; EVs</span><span class="lvs"><button data-lv="50" class="${LV===50?'on':''}">Lv 50</button><button data-lv="100" class="${LV===100?'on':''}">Lv 100</button></span></div>${rows}
+<aside class="gl rise" style="--i:0"><div class="gh"><span>Stats &amp; EVs</span><span class="lvs">Lv 50 · +1 per point</span></div>${rows}
 <div class="sr tr rise" style="--i:7"><span class="sl">Total</span><span></span><span class="sv"><span class="tv v" data-v="${sum}" data-d="1200">${sum}</span><small class="td">${sum>base?'+'+(sum-base):''}</small></span><span></span></div>
-<div class="evt rise" style="--i:8"><div class="evh"><span>EVs used <b class="es">${es}</b> / 510</span><span class="evnote">IV 31 · neutral nature</span></div><i class="mt"><b style="transform:scaleX(${es/510})"></b></i><div class="pr"><button data-p="reset">Reset</button><button data-p="phys">Physical</button><button data-p="spec">Special</button><button data-p="bulk">Bulky</button></div></div>
+<div class="evt rise" style="--i:8"><div class="evh"><span>EV points used <b class="es">${es}</b> / 66</span><span class="evnote">IV 31 · neutral nature</span></div><i class="mt"><b style="transform:scaleX(${es/66})"></b></i><div class="pr"><button data-p="reset">Reset</button><button data-p="phys">Physical</button><button data-p="spec">Special</button><button data-p="bulk">Bulky</button></div></div>
 </aside>
 <section class="mid"><div class="pic"><img alt="${e.label}" src="${sprite(e)||''}" ${d.sp.fb?`onerror="this.onerror=null;this.src='${d.sp.fb}'"`:''}></div></section>
 <aside class="rs">
@@ -301,23 +301,21 @@ function wireEV(){
   const upd=()=>{
     const ref=REF(LV);let sum=0,base=0,es=0;
     rows.forEach((r,n)=>{
-      const f=calcS(n,d.st[n],ev[n],LV),f0=calcS(n,d.st[n],0,LV);sum+=f;base+=f0;es+=ev[n];
+      const f=calcS(n,d.st[n],0,LV)+ev[n],f0=calcS(n,d.st[n],0,LV);sum+=f;base+=f0;es+=ev[n];
       r.style.setProperty('--b',(f0/ref[n]*100).toFixed(1));r.style.setProperty('--g',(f/ref[n]*100).toFixed(1));
       tw(r.querySelector('.v'),f);r.querySelector('.dl').textContent=f>f0?'+'+(f-f0):'';
       r.querySelector('.evn').textContent=ev[n];
-      const inp=r.querySelector('input');if(+inp.value!==ev[n])inp.value=ev[n];inp.style.setProperty('--p',(ev[n]/252*100)+'%');
-      r.classList.toggle('mx',ev[n]>=252);
+      const inp=r.querySelector('input');if(+inp.value!==ev[n])inp.value=ev[n];inp.style.setProperty('--p',(ev[n]/32*100)+'%');
+      r.classList.toggle('mx',ev[n]>=32);
     });
     tw(p.querySelector('.tv'),sum);p.querySelector('.td').textContent=sum>base?'+'+(sum-base):'';
-    p.querySelector('.es').textContent=es;p.querySelector('.mt b').style.transform='scaleX('+es/510+')';
-    p.querySelectorAll('[data-lv]').forEach(b=>b.classList.toggle('on',+b.dataset.lv===LV));
+    p.querySelector('.es').textContent=es;p.querySelector('.mt b').style.transform='scaleX('+es/66+')';
     saveEV();
   };
   rows.forEach((r,n)=>{const inp=r.querySelector('input');
-    inp.oninput=()=>{let v=+inp.value;const others=ev.reduce((a,b,i)=>i===n?a:a+b,0);v=Math.min(v,510-others);inp.value=v;ev[n]=v;upd()}});
-  const PS={reset:[0,0,0,0,0,0],phys:[4,252,0,0,0,252],spec:[4,0,0,252,0,252],bulk:[252,0,252,0,4,0]};
+    inp.oninput=()=>{let v=+inp.value;const others=ev.reduce((a,b,i)=>i===n?a:a+b,0);v=Math.min(v,66-others);inp.value=v;ev[n]=v;upd()}});
+  const PS={reset:[0,0,0,0,0,0],phys:[2,32,0,0,0,32],spec:[2,0,0,32,0,32],bulk:[32,0,32,0,2,0]};
   p.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{PS[b.dataset.p].forEach((v,i)=>ev[i]=v);upd()});
-  p.querySelectorAll('[data-lv]').forEach(b=>b.onclick=()=>{LV=+b.dataset.lv;upd()});
 }
 function countUp(){
   const calm=matchMedia('(prefers-reduced-motion:reduce)').matches;
@@ -577,5 +575,15 @@ if(!calm&&!sessionStorage.getItem('boot')){
 .dx .nb:hover img{transform:scale(1.15);opacity:1}
 .dx #pv:hover{transform:translateX(-3px)}.dx #nx:hover{transform:translateX(3px)}
 @media(prefers-reduced-motion:reduce){.dx .mid:before,.dx .mid:after,.dx .pic:before{animation:none}#ov.show .dx .sr .bw i{animation:none;transform:none}}
+</style>
+<style id="clarity">
+/* sharper, higher-contrast sprites */
+.top{height:200px;background:radial-gradient(circle at 50% 55%,#ffffff70 0 30%,transparent 31%),linear-gradient(160deg,var(--c1,#ccd),var(--c2,#eef))}
+.top img{max-width:90%;max-height:92%;filter:contrast(1.08) saturate(1.12) drop-shadow(0 0 1px #000c) drop-shadow(0 7px 5px #0005)}
+.pic img,.dx .pic img{filter:contrast(1.08) saturate(1.12) drop-shadow(0 0 1.5px #000c) drop-shadow(0 12px 8px #0006)}
+.dx .pic img{width:min(98%,470px);max-height:420px}
+.dx .nb img{filter:contrast(1.08) drop-shadow(0 0 1px #000c) drop-shadow(0 4px 3px #0006)}
+img[src*="animated"]{image-rendering:pixelated}
+.dx .lvs{color:var(--yel);font-size:.78rem;font-weight:600}
 </style>
 </body></html>
