@@ -261,25 +261,39 @@ function bar(){
 }
 let ov=null,cur=null,curE=null,busy=false,stepping=false,queued=0;
 const EVS=(()=>{try{return JSON.parse(localStorage.getItem('evs2')||'{}')}catch(x){return{}}})();
-const LV=50;
-const saveEV=()=>{try{localStorage.setItem('evs2',JSON.stringify(EVS));0}catch(x){}};
-const calcS=(n,b,ev,lv)=>{const x=Math.floor((2*b+31+Math.floor(ev/4))*lv/100);return n===0?(b===1?1:x+lv+10):x+5};
-const REF=lv=>[0,1,2,3,4,5].map(n=>calcS(n,n===0?255:200,0,lv)+32);
+const NS=(()=>{try{return JSON.parse(localStorage.getItem('nat2')||'{}')}catch(x){return{}}})();
+const saveEV=()=>{try{localStorage.setItem('evs2',JSON.stringify(EVS));localStorage.setItem('nat2',JSON.stringify(NS))}catch(x){}};
+/* nature matrix: row = boosted stat (+10%), column = lowered stat (-10%); diagonal = neutral */
+const NATS=[['Hardy','Lonely','Adamant','Naughty','Brave'],['Bold','Docile','Impish','Lax','Relaxed'],['Modest','Mild','Bashful','Rash','Quiet'],['Calm','Gentle','Careful','Quirky','Sassy'],['Timid','Hasty','Jolly','Naive','Serious']];
+const SN=['HP','Attack','Defense','Sp. Atk','Sp. Def','Speed'],SI=['♥','✶','◆','◎','◉','»'];
+const natM=(nat,n)=>{const r=Math.floor(nat/5),c=nat%5;return r===c?1:n===r+1?1.1:n===c+1?.9:1};
+const natName=nat=>NATS[Math.floor(nat/5)][nat%5];
+const natTxt=nat=>{const r=Math.floor(nat/5),c=nat%5;return r===c?'No stat change':'+10% '+SN[r+1]+' · −10% '+SN[c+1]};
+/* Lv 50, each point = +1 stat, nature applied last (HP is never affected) */
+const calcS=(n,b,pts,nat)=>{const x=Math.floor((2*b+31)/2);if(n===0)return b===1?1:x+60+pts;return Math.floor((x+5+pts)*natM(nat,n))};
 function detail(e){
-  const d=e.data,ty=d.ty,c1=TC[ty[0]],c2=TC[ty[1]||ty[0]],ev=EVS[e.id]||(EVS[e.id]=[0,0,0,0,0,0]),ref=REF(LV);
+  const d=e.data,ty=d.ty,c1=TC[ty[0]],c2=TC[ty[1]||ty[0]],ev=EVS[e.id]||(EVS[e.id]=[0,0,0,0,0,0]),nat=NS[e.id]||0;
   const cs=[...document.querySelectorAll('.card')],ci=cs.findIndex(c=>c._e===e),L=cs.length;
   const nb=k=>{if(ci<0)return'';const x=cs[(ci+k+L)%L]._e;return x.data?`<img alt="" src="${sprite(x)||''}">`:''};
   let sum=0,base=0,es=0;
   const rows=STATS.map(([k,l],n)=>{
-    const f=calcS(n,d.st[n],0,LV)+ev[n],f0=calcS(n,d.st[n],0,LV);sum+=f;base+=f0;es+=ev[n];
-    return `<div class="sr rise" style="--i:${n+1};--b:${(f0/ref[n]*100).toFixed(1)};--g:${(f/ref[n]*100).toFixed(1)}" data-n="${n}"><span class="sl">${l}</span><div class="bw"><i class="g"></i><i class="b"></i></div><span class="sv"><span class="v" data-v="${f}" data-d="${500+n*90}">${f}</span><small class="dl">${f>f0?'+'+(f-f0):''}</small></span><span class="evn">${ev[n]}</span><input type="range" min="0" max="32" step="1" value="${ev[n]}" aria-label="${l} EVs" style="--p:${ev[n]/32*100}%"></div>`}).join('');
+    const f=calcS(n,d.st[n],ev[n],nat),f0=calcS(n,d.st[n],0,nat),m=natM(nat,n);sum+=f;base+=f0;es+=ev[n];
+    return `<div class="er rise${ev[n]>=32?' mx':''}" style="--i:${n+1};--p:${ev[n]/32*100}%" data-n="${n}"><span class="ei">${SI[n]}</span><span class="en">${SN[n]}</span><span class="ec">${m>1?'<b class="up">▲</b>':m<1?'<b class="dn">▼</b>':''}</span><span class="sv"><span class="v" data-v="${f}" data-d="${500+n*90}">${f}</span><small class="dl">${f>f0?'+'+(f-f0):''}</small></span><div class="eb"><i></i><input type="range" min="0" max="32" step="1" value="${ev[n]}" aria-label="${SN[n]} EV points"></div><span class="ep"><button class="mn" aria-label="Decrease ${SN[n]}">−</button><b class="evn">${ev[n]}</b><button class="pl" aria-label="Increase ${SN[n]}">+</button></span></div>`}).join('');
   const chips=ty.map(t=>`<span class="t" style="background:${TC[t]}">${t}</span>`).join('');
   const bst=d.st.reduce((a,b)=>a+b,0);
+  const hdr=['','Atk','Def','SpA','SpD','Spe'];
+  let grid='<span class="h">▲ \\ ▼</span>'+[1,2,3,4,5].map(i=>`<span class="h">${hdr[i]}</span>`).join('');
+  NATS.forEach((row,r)=>{grid+=`<span class="h">${hdr[r+1]}</span>`+row.map((nm,c)=>`<button data-nat="${r*5+c}" class="${r===c?'neu':''}${r*5+c===nat?' on':''}">${nm}</button>`).join('')});
   return `<div class="panel dx" data-bst="${bst}" style="--c:${c1};background:radial-gradient(ellipse at 50% 42%,${c1}66,transparent 62%),radial-gradient(circle at 12% 95%,${c2}44,transparent 50%),linear-gradient(160deg,#2b2466,#16204f 60%,#1b1840)">
 <div class="stage">
-<aside class="gl rise" style="--i:0"><div class="gh"><span>Stats &amp; EVs</span><span class="lvs">Lv 50 · +1 per point</span></div>${rows}
-<div class="sr tr rise" style="--i:7"><span class="sl">Total</span><span></span><span class="sv"><span class="tv v" data-v="${sum}" data-d="1200">${sum}</span><small class="td">${sum>base?'+'+(sum-base):''}</small></span><span></span></div>
-<div class="evt rise" style="--i:8"><div class="evh"><span>EV points used <b class="es">${es}</b> / 66</span><span class="evnote">IV 31 · neutral nature</span></div><i class="mt"><b style="transform:scaleX(${es/66})"></b></i><div class="pr"><button data-p="reset">Reset</button><button data-p="phys">Physical</button><button data-p="spec">Special</button><button data-p="bulk">Bulky</button></div></div>
+<aside class="ls">
+<div class="gl rise" style="--i:0"><div class="gh"><span>EV Points</span><span class="ect"><b class="es">${es}</b> / 66</span></div>${rows}
+<div class="etot rise" style="--i:7"><span>Total</span><span><span class="tv v" data-v="${sum}" data-d="1200">${sum}</span><small class="td">${sum>base?'+'+(sum-base):''}</small></span></div>
+<div class="evt rise" style="--i:8"><i class="mt"><b style="transform:scaleX(${es/66})"></b></i><div class="pr"><button data-p="reset">Reset</button><button data-p="phys">Physical</button><button data-p="spec">Special</button><button data-p="bulk">Bulky</button></div></div>
+</div>
+<div class="gl nat rise" style="--i:9"><div class="gh"><span>Nature</span><span class="nm">±10%</span></div>
+<button class="nbtn" id="ntg" aria-label="Choose nature"><span class="tx"><b>${natName(nat)}</b><small>${natTxt(nat)}</small></span><span class="car">▾</span></button>
+<div class="ngw"><div class="ngi"><p class="nl">Row = stat raised +10% · Column = stat lowered −10%</p><div class="ng">${grid}</div></div></div></div>
 </aside>
 <section class="mid"><div class="pic"><img alt="${e.label}" src="${sprite(e)||''}" ${d.sp.fb?`onerror="this.onerror=null;this.src='${d.sp.fb}'"`:''}></div></section>
 <aside class="rs">
@@ -293,29 +307,42 @@ ${d.miss?'<div class="note" style="padding:0 22px 12px">Mega data not in PokéAP
 }
 function wireEV(){
   const p=ov&&ov.querySelector('.panel');if(!p)return;
-  const e=curE,d=e.data,ev=EVS[e.id]||(EVS[e.id]=[0,0,0,0,0,0]),rows=[...p.querySelectorAll('.sr[data-n]')];
+  const e=curE,d=e.data,ev=EVS[e.id]||(EVS[e.id]=[0,0,0,0,0,0]);let nat=NS[e.id]||0;
+  const rows=[...p.querySelectorAll('.er')],natBox=p.querySelector('.nat');
   const tw=(el,to)=>{const from=+el.dataset.v||0;el.dataset.v=to;cancelAnimationFrame(el._r);
     if(from===to){el.textContent=to;return}
     const t0=performance.now(),f=t=>{const k=Math.min(1,(t-t0)/260);el.textContent=Math.round(from+(to-from)*(1-Math.pow(1-k,3)));if(k<1)el._r=requestAnimationFrame(f)};
     el._r=requestAnimationFrame(f)};
   const upd=()=>{
-    const ref=REF(LV);let sum=0,base=0,es=0;
+    let sum=0,base=0,es=0;
     rows.forEach((r,n)=>{
-      const f=calcS(n,d.st[n],0,LV)+ev[n],f0=calcS(n,d.st[n],0,LV);sum+=f;base+=f0;es+=ev[n];
-      r.style.setProperty('--b',(f0/ref[n]*100).toFixed(1));r.style.setProperty('--g',(f/ref[n]*100).toFixed(1));
-      tw(r.querySelector('.v'),f);r.querySelector('.dl').textContent=f>f0?'+'+(f-f0):'';
-      r.querySelector('.evn').textContent=ev[n];
-      const inp=r.querySelector('input');if(+inp.value!==ev[n])inp.value=ev[n];inp.style.setProperty('--p',(ev[n]/32*100)+'%');
+      const f=calcS(n,d.st[n],ev[n],nat),f0=calcS(n,d.st[n],0,nat),m=natM(nat,n);sum+=f;base+=f0;es+=ev[n];
+      r.style.setProperty('--p',(ev[n]/32*100)+'%');tw(r.querySelector('.v'),f);
+      r.querySelector('.dl').textContent=f>f0?'+'+(f-f0):'';r.querySelector('.evn').textContent=ev[n];
+      r.querySelector('.ec').innerHTML=m>1?'<b class="up">▲</b>':m<1?'<b class="dn">▼</b>':'';
+      const inp=r.querySelector('input');if(+inp.value!==ev[n])inp.value=ev[n];
       r.classList.toggle('mx',ev[n]>=32);
     });
     tw(p.querySelector('.tv'),sum);p.querySelector('.td').textContent=sum>base?'+'+(sum-base):'';
     p.querySelector('.es').textContent=es;p.querySelector('.mt b').style.transform='scaleX('+es/66+')';
+    natBox.querySelector('.nbtn b').textContent=natName(nat);natBox.querySelector('.nbtn small').textContent=natTxt(nat);
+    natBox.querySelectorAll('[data-nat]').forEach(b=>b.classList.toggle('on',+b.dataset.nat===nat));
     saveEV();
   };
-  rows.forEach((r,n)=>{const inp=r.querySelector('input');
-    inp.oninput=()=>{let v=+inp.value;const others=ev.reduce((a,b,i)=>i===n?a:a+b,0);v=Math.min(v,66-others);inp.value=v;ev[n]=v;upd()}});
+  const setP=(n,v)=>{v=Math.max(0,Math.min(32,v));const others=ev.reduce((a,b,i)=>i===n?a:a+b,0);v=Math.min(v,66-others);if(v!==ev[n]){ev[n]=v;upd()}};
+  rows.forEach((r,n)=>{
+    const inp=r.querySelector('input');inp.oninput=()=>{setP(n,+inp.value);inp.value=ev[n]};
+    [[r.querySelector('.mn'),-1],[r.querySelector('.pl'),1]].forEach(([btn,dl])=>{
+      let t,iv;const go=()=>setP(n,ev[n]+dl),stop=()=>{clearTimeout(t);clearInterval(iv)};
+      btn.onpointerdown=pe=>{pe.preventDefault();go();t=setTimeout(()=>{iv=setInterval(go,70)},350)};
+      btn.onpointerup=btn.onpointercancel=btn.onpointerleave=stop;
+      btn.onkeydown=k=>{if(k.key==='Enter'||k.key===' '){k.preventDefault();go()}};
+    });
+  });
   const PS={reset:[0,0,0,0,0,0],phys:[2,32,0,0,0,32],spec:[2,0,0,32,0,32],bulk:[32,0,32,0,2,0]};
   p.querySelectorAll('[data-p]').forEach(b=>b.onclick=()=>{PS[b.dataset.p].forEach((v,i)=>ev[i]=v);upd()});
+  p.querySelector('#ntg').onclick=()=>natBox.classList.toggle('open');
+  natBox.querySelectorAll('[data-nat]').forEach(b=>b.onclick=()=>{nat=+b.dataset.nat;NS[e.id]=nat;upd();natBox.classList.remove('open')});
 }
 function countUp(){
   const calm=matchMedia('(prefers-reduced-motion:reduce)').matches;
@@ -585,5 +612,54 @@ if(!calm&&!sessionStorage.getItem('boot')){
 .dx .nb img{filter:contrast(1.08) drop-shadow(0 0 1px #000c) drop-shadow(0 4px 3px #0006)}
 img[src*="animated"]{image-rendering:pixelated}
 .dx .lvs{color:var(--yel);font-size:.78rem;font-weight:600}
+</style>
+<style id="ev">
+/* ===== Champions-style EV points + nature ===== */
+.dx .stage{grid-template-columns:minmax(0,440px) minmax(0,1fr) minmax(0,300px)}
+@media(max-width:1100px){.dx .stage{grid-template-columns:1fr}}
+.dx .ls{display:grid;gap:14px}
+.dx .ect{font-size:1.05rem;color:#fff}.dx .ect b{color:var(--yel)}
+.dx .er{position:relative;display:grid;grid-template-columns:22px 64px 14px 50px 1fr 78px;gap:0 8px;align-items:center;
+  margin:6px 12px 6px 26px;padding:4px 10px 4px 12px;min-height:48px;border-radius:12px;color:#232a5c;font-weight:700;
+  background:linear-gradient(#f6f7ff,#dfe2fb);box-shadow:0 3px 0 #0007;transition:background .2s,transform .2s}
+.dx .er:hover,.dx .er:focus-within{background:linear-gradient(90deg,#cbf53c,#7fdc4a);transform:translateX(5px)}
+.dx .er:before{content:"";position:absolute;left:-17px;top:50%;margin-top:-11px;border:11px solid transparent;border-left:15px solid var(--yel);border-right:0;
+  opacity:0;transform:translateX(-8px);transition:opacity .2s,transform .2s;filter:drop-shadow(0 2px 0 #0006)}
+.dx .er:hover:before,.dx .er:focus-within:before{opacity:1;transform:none}
+.dx .ei{color:#2a3a9c;font-size:1.15rem;text-align:center}
+.dx .en{font-size:.95rem;white-space:nowrap}
+.dx .ec b{font-size:.72rem}.dx .ec .up{color:#e8392f}.dx .ec .dn{color:#2f6fe0}
+.dx .er .sv{text-align:right}.dx .er .v{font-size:1.18rem}
+.dx .er .dl{color:#0b8a3a;display:block;height:.8em;line-height:.8em;font-size:.68rem;margin-top:-1px}
+.dx .eb{position:relative;height:17px;border-radius:6px;background:#5a64a0;border:3px solid #333b7a;overflow:hidden}
+.dx .eb i{position:absolute;left:0;top:0;bottom:0;width:var(--p);transform-origin:left;background:linear-gradient(#ffc24a,#ff8a00);transition:width .25s cubic-bezier(.2,.9,.3,1)}
+.dx .er.mx .eb i{background:linear-gradient(#ffe36a,#ffb000);box-shadow:0 0 10px #ffc400}
+#ov.show .dx .er .eb i{animation:barIn .7s calc(.45s + var(--i,0)*.08s) both cubic-bezier(.2,.9,.3,1)}
+.dx .er input[type=range]{position:absolute;inset:0;width:100%;height:100%;min-width:0;opacity:0;margin:0;padding:0;border:0;grid-column:auto;cursor:ew-resize}
+.dx .ep{display:flex;align-items:center;justify-content:space-between}
+.dx .ep button{width:23px;height:23px;padding:0;border-radius:50%;border:2px solid #333b7a;background:#fff;color:#333b7a;font-size:1.05rem;line-height:1;font-weight:700;box-shadow:0 2px 0 #0004;touch-action:none}
+.dx .ep button:hover{background:var(--yel)}
+.dx .ep .evn{min-width:22px;text-align:center;font-size:1.05rem}
+.dx .etot{display:flex;justify-content:space-between;align-items:center;margin:8px 14px 2px;padding:5px 16px;border-radius:99px;background:var(--yel);color:#222;font-weight:700;border:3px solid var(--line)}
+.dx .etot .td{display:inline;height:auto;line-height:1;margin:0 0 0 6px;font-size:.78rem;color:#0b7a33}
+.dx .evt{padding:8px 14px 14px}
+.dx .mt{margin:2px 0 9px}
+/* nature picker */
+.dx .nat .nm{color:var(--yel);font-size:.8rem}
+.dx .nbtn{display:flex;align-items:center;gap:10px;width:calc(100% - 28px);margin:10px 14px;padding:7px 16px;border-radius:14px;border:3px solid #333b7a;
+  background:linear-gradient(#f6f7ff,#dfe2fb);color:#232a5c;box-shadow:0 3px 0 #0007;text-align:left}
+.dx .nbtn .tx{flex:1}.dx .nbtn b{font-size:1.3rem;display:block;line-height:1.15}
+.dx .nbtn small{display:block;font-size:.76rem;font-weight:600;color:#4a5190}
+.dx .nbtn .car{font-size:1.2rem;transition:transform .3s}.dx .nat.open .car{transform:rotate(180deg)}
+.dx .ngw{display:grid;grid-template-rows:0fr;transition:grid-template-rows .35s cubic-bezier(.2,.9,.3,1)}
+.dx .nat.open .ngw{grid-template-rows:1fr}
+.dx .ngi{overflow:hidden;min-height:0}
+.dx .nl{margin:2px 14px 6px;font-size:.72rem;color:var(--mut);font-weight:500}
+.dx .ng{display:grid;grid-template-columns:44px repeat(5,1fr);gap:4px;padding:0 12px 12px;font-weight:600}
+.dx .ng .h{color:var(--yel);text-align:center;align-self:center;font-weight:700;font-size:.72rem}
+.dx .ng button{padding:3px 0;font-size:.72rem;border-width:2px;border-radius:8px;box-shadow:0 2px 0 var(--line);transition:transform .12s,background .15s}
+.dx .ng button:hover{transform:translateY(-2px);background:#cbf53c}
+.dx .ng button.neu{background:#d3d5e6;color:#667}
+.dx .ng button.on{background:var(--yel);color:#222}
 </style>
 </body></html>
