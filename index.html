@@ -288,7 +288,7 @@ function detail(e){
 <div class="stage">
 <aside class="ls">
 <div class="gl rise" style="--i:0"><div class="gh"><span>EV Points</span><span class="ect"><b class="es">${es}</b> / 66</span></div>${rows}
-<div class="etot rise" style="--i:7"><span>Total <small class="bstn">Base ${bst}</small></span><span><span class="tv v" data-v="${sum}" data-d="1200">${sum}</span><small class="td">${sum>base?'+'+(sum-base):''}</small></span></div>
+<div class="etot rise" style="--i:7"><span>Total <small class="bstn">Base stats + points</small></span><span><span class="tv v" data-v="${bst+es}" data-d="1200">${bst+es}</span><small class="td">${es?'+'+es:''}</small></span></div>
 <div class="evt rise" style="--i:8"><i class="mt"><b style="transform:scaleX(${es/66})"></b></i><div class="pr"><button data-p="reset">Reset</button><button data-p="phys">Physical</button><button data-p="spec">Special</button><button data-p="bulk">Bulky</button></div></div>
 </div>
 <div class="gl nat rise" style="--i:9"><div class="gh"><span>Nature</span><span class="nm">±10%</span></div>
@@ -323,7 +323,7 @@ function wireEV(){
       const inp=r.querySelector('input');if(+inp.value!==ev[n])inp.value=ev[n];
       r.classList.toggle('mx',ev[n]>=32);
     });
-    tw(p.querySelector('.tv'),sum);p.querySelector('.td').textContent=sum>base?'+'+(sum-base):'';
+    tw(p.querySelector('.tv'),d.st.reduce((a,b)=>a+b,0)+es);p.querySelector('.td').textContent=es?'+'+es:'';
     p.querySelector('.es').textContent=es;p.querySelector('.mt b').style.transform='scaleX('+es/66+')';
     natBox.querySelector('.nbtn b').textContent=natName(nat);natBox.querySelector('.nbtn small').textContent=natTxt(nat);
     natBox.querySelectorAll('[data-nat]').forEach(b=>b.classList.toggle('on',+b.dataset.nat===nat));
