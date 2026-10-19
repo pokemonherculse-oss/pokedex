@@ -325,4 +325,191 @@ function closeCard(){
 addEventListener('keydown',ev=>{if(!ov)return;if(ev.key==='Escape')closeCard();if(ev.key==='ArrowLeft'){ev.preventDefault();step(-1)}if(ev.key==='ArrowRight'){ev.preventDefault();step(1)}});
 bar();render();preload();
 </script>
+<!-- ============================================================
+  POKÉDEX ANIMATION ADD-ON
+  Paste this whole block into your Pokédex file, directly
+  above the closing </body> tag (after your existing </script>).
+  Nothing in your Pokémon list or logic is changed.
+============================================================ -->
+<style>
+/* ---------- header life ---------- */
+.lens{animation:lensGlow 2.6s ease-in-out infinite}
+@keyframes lensGlow{50%{box-shadow:0 0 0 4px var(--line),0 0 22px 6px #5ab8ff99,inset 0 -4px 6px #0006}}
+.dots i{animation:dotBlink 2.4s infinite}
+.dots i:nth-child(2){animation-delay:.3s}.dots i:nth-child(3){animation-delay:.6s}
+@keyframes dotBlink{0%,60%,100%{filter:none}30%{filter:brightness(1.7) drop-shadow(0 0 5px currentColor)}}
+
+/* ---------- grid entrance + 3D tilt cards ---------- */
+.pre{opacity:0}
+.pop{animation:cardPop .65s var(--dl,0ms) both cubic-bezier(.2,1.1,.3,1)}
+h2.pop{animation-name:hPop}
+@keyframes cardPop{0%{opacity:0;transform:translateY(46px) scale(.88) rotateX(28deg)}60%{opacity:1;transform:translateY(-6px) scale(1.02)}100%{opacity:1;transform:none}}
+@keyframes hPop{0%{opacity:0;transform:translateX(-50px) skewX(-12deg)}100%{opacity:1;transform:none}}
+.card{transition:transform .35s cubic-bezier(.2,.9,.3,1),box-shadow .2s;transform-style:preserve-3d}
+.card:hover{transform:perspective(800px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg)) translateY(-6px) scale(1.03);transition:transform .1s linear,box-shadow .2s}
+.card:after{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;opacity:0;transition:opacity .2s;
+  background:radial-gradient(circle at var(--mx,50%) var(--my,50%),#ffffff66,transparent 45%);mix-blend-mode:overlay}
+.card:hover:after{opacity:1}
+.top:before{transition:transform .8s cubic-bezier(.2,1,.3,1)}
+.card:hover .top:before{transform:rotate(40deg) scale(1.12)}
+.top img{transition:transform .35s cubic-bezier(.3,1.6,.5,1)}
+.card:hover .top img{transform:translateY(-8px) scale(1.14) rotate(-3deg)}
+.top img.ld{animation:sprIn .6s cubic-bezier(.2,1.4,.4,1)}
+@keyframes sprIn{0%{transform:scale(.3) translateY(30px);filter:brightness(4) drop-shadow(0 0 14px #fff);opacity:0}100%{transform:none;opacity:1}}
+
+/* ---------- detail panel extras ---------- */
+.panel{position:relative}
+.pic:before{animation:spin 40s linear infinite;translate:calc(var(--px,0px)*-1.5) calc(var(--py,0px)*-1.5)}
+@keyframes spin{to{rotate:360deg}}
+.pic img{translate:var(--px,0px) var(--py,0px)}
+.pic:after{content:"";position:absolute;left:0;right:0;top:-30%;height:90px;pointer-events:none;opacity:0;
+  background:linear-gradient(#0000,#ffffffaa,#0000)}
+#ov.show .pic:after{animation:scan 1.5s .35s ease-in-out}
+@keyframes scan{0%{top:-30%;opacity:1}100%{top:110%;opacity:1}}
+#ov.show .info .types .t{animation:chip .55s calc(.35s + var(--ci,0)*.12s) both cubic-bezier(.3,1.7,.5,1)}
+.info .types .t:nth-child(2){--ci:1}
+@keyframes chip{from{transform:scale(0) rotate(-25deg);opacity:0}to{transform:none;opacity:1}}
+#ov .ds i b{position:relative}
+#ov .ds i b:after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,#fffa 50%,transparent 70%);transform:translateX(-120%);animation:shim 2.6s 2s infinite}
+@keyframes shim{to{transform:translateX(120%)}}
+.panel.foil:after{content:"";position:absolute;inset:0;pointer-events:none;z-index:5;opacity:.3;mix-blend-mode:color-dodge;
+  background:linear-gradient(115deg,transparent 15%,#ff6ec4,#ffe66e,#6effd8,#6ea8ff,transparent 85%) 0 0/300% 300%;animation:foil 5s linear infinite}
+@keyframes foil{to{background-position:300% 0}}
+.fxc{position:fixed;inset:0;width:100%;height:100%;z-index:2;pointer-events:none}
+
+/* ---------- typing cursor ---------- */
+.cur{display:inline-block;width:.5em;height:1em;margin-left:2px;vertical-align:-2px;background:var(--yel);animation:blink .6s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+
+/* ---------- boot screen ---------- */
+#boot{position:fixed;inset:0;z-index:300;background:#000;display:grid;place-items:center;color:#7dffb0;
+  font:600 15px/1.9 ui-monospace,Menlo,Consolas,monospace;clip-path:inset(0);transition:clip-path .8s cubic-bezier(.7,0,.2,1),opacity .8s}
+#boot:after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(#0000 0 2px,#0005 2px 3px)}
+#boot.out{clip-path:inset(50% 0 50% 0);opacity:0}
+#boot .bl{display:flex;gap:24px;align-items:center;padding:20px}
+#boot .lens{width:90px;height:90px;border-width:6px}
+#boot .bt{min-width:290px;min-height:9.5em;text-shadow:0 0 8px #7dffb0aa}
+#boot .cur{background:#7dffb0}
+
+@media(prefers-reduced-motion:reduce){.pre{opacity:1}.pop,.top img.ld,.lens,.dots i,.pic:before,#ov .ds i b:after,.panel.foil:after,#ov.show .pic:after,#ov.show .info .types .t{animation:none!important}.card:hover{transform:none}}
+</style>
+<script>
+(()=>{
+const calm=matchMedia('(prefers-reduced-motion:reduce)').matches;
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+/* typewriter with blinking cursor */
+function typeInto(el,text,sp=16){return new Promise(res=>{
+  el.textContent='';const t=document.createTextNode(''),c=document.createElement('i');c.className='cur';el.append(t,c);let i=0;
+  const tick=()=>{if(!el.isConnected)return res();i++;t.data=text.slice(0,i);
+    if(i<text.length){const ch=text[i-1];setTimeout(tick,/[.!?]/.test(ch)?sp*12:/[,;]/.test(ch)?sp*6:sp*(.5+Math.random()))}
+    else{setTimeout(()=>c.remove(),1500);res()}};
+  tick()})}
+
+/* name decode / scramble */
+function decode(el){const fin=el.textContent,ch='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#%&?',n=fin.length;let f=0;
+  const iv=setInterval(()=>{if(!el.isConnected)return clearInterval(iv);f++;
+    el.textContent=[...fin].map((c,i)=>c===' '||i<f/1.5?c:ch[Math.random()*ch.length|0]).join('');
+    if(f/1.5>=n){clearInterval(iv);el.textContent=fin}},38)}
+
+/* energy particles + shockwave in the detail view */
+let cv,cx,ps=[],rings=[],col='#ffcb05';
+function ensure(o){
+  if(cv&&cv.isConnected)return;
+  cv=document.createElement('canvas');cv.className='fxc';o.append(cv);cx=cv.getContext('2d');
+  cv.width=innerWidth;cv.height=innerHeight;ps=[];rings=[];loop();
+}
+function loop(){
+  if(!cv.isConnected)return;
+  cx.clearRect(0,0,cv.width,cv.height);cx.globalCompositeOperation='lighter';
+  if(Math.random()<.5)ps.push({x:Math.random()*cv.width,y:cv.height+10,vx:(Math.random()-.5)*.6,vy:-(.8+Math.random()*1.8),l:0,m:220,r:1+Math.random()*2.5,d:1,amb:1});
+  ps=ps.filter(q=>q.l++<q.m);
+  ps.forEach(q=>{q.x+=q.vx+(q.amb?Math.sin(q.l/18)*.5:0);q.y+=q.vy;q.vx*=q.d;q.vy*=q.d;
+    cx.globalAlpha=(1-q.l/q.m)*(q.amb?.6:1);cx.fillStyle=col;cx.shadowColor=col;cx.shadowBlur=12;
+    cx.beginPath();cx.arc(q.x,q.y,q.r,0,6.283);cx.fill()});
+  rings=rings.filter(g=>g.a>.02);
+  rings.forEach(g=>{g.r+=g.s?22:12;g.a*=.93;cx.globalAlpha=g.a;cx.strokeStyle=col;cx.lineWidth=g.s?3:8;cx.shadowBlur=20;
+    cx.beginPath();cx.arc(g.x,g.y,g.r,0,6.283);cx.stroke()});
+  requestAnimationFrame(loop);
+}
+function burst(o,p){
+  ensure(o);const r=p.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2;
+  for(let i=0;i<80;i++){const a=Math.random()*6.283,s=2+Math.random()*9;
+    ps.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,l:0,m:50+Math.random()*50,r:1+Math.random()*3,d:.94})}
+  rings.push({x,y,r:10,a:1},{x,y,r:0,a:.8,s:1});
+}
+
+/* runs whenever the detail overlay changes */
+function scan(){
+  const o=document.getElementById('ov');if(!o||!o.classList.contains('show'))return;
+  const p=o.querySelector('.panel');if(!p)return;
+  if(!p.dataset.fx){
+    p.dataset.fx=1;
+    const tv=o.querySelector('.tot .v');p.classList.toggle('foil',tv&&+tv.dataset.v>=600);
+    const tc=o.querySelector('.info .t');if(tc)col=getComputedStyle(tc).backgroundColor;
+    if(!calm)burst(o,p);
+  }
+  if(calm)return;
+  const h=o.querySelector('.info h3');if(h&&!h.dataset.fx){h.dataset.fx=1;decode(h)}
+  const de=o.querySelector('.dexent');
+  if(de&&!de.dataset.fx){de.dataset.fx=1;const tx=de.textContent;de.style.minHeight=de.offsetHeight+'px';de.textContent='';sleep(900).then(()=>typeInto(de,tx,15))}
+  o.querySelectorAll('.ab p').forEach((a,i)=>{
+    if(a.dataset.fx||a.textContent==='Loading…')return;
+    a.dataset.fx=1;const tx=a.textContent;a.style.minHeight=a.offsetHeight+'px';a.textContent='';
+    sleep(1300+i*500).then(()=>typeInto(a,tx,11));
+  });
+}
+let raf=0;const sched=()=>{if(!raf)raf=requestAnimationFrame(()=>{raf=0;scan()})};
+new MutationObserver(()=>{
+  const o=document.getElementById('ov');
+  if(o&&!o._fx){o._fx=1;
+    new MutationObserver(sched).observe(o,{subtree:true,childList:true,attributes:true,attributeFilter:['class'],characterData:true});
+    o.addEventListener('pointermove',e=>{o.style.setProperty('--px',((e.clientX/innerWidth-.5)*-26)+'px');o.style.setProperty('--py',((e.clientY/innerHeight-.5)*-26)+'px')});
+    sched();
+  }
+}).observe(document.body,{childList:true});
+
+/* grid: staggered entrance, tilt + glare, sprite pop-in */
+const main=document.getElementById('main');
+if(!calm){
+  const rio=new IntersectionObserver(es=>{let i=0;es.forEach(x=>{
+    if(!x.isIntersecting)return;rio.unobserve(x.target);const el=x.target;
+    el.style.setProperty('--dl',Math.min(i++*55,450)+'ms');el.classList.replace('pre','pop');
+    el.addEventListener('animationend',ev=>{if(ev.target===el)el.classList.remove('pop')});
+  })},{threshold:.04});
+  const prep=()=>main.querySelectorAll('.card:not([data-rv]),h2:not([data-rv])').forEach(el=>{el.dataset.rv=1;el.classList.add('pre');rio.observe(el)});
+  new MutationObserver(prep).observe(main,{childList:true});prep();
+}
+main.addEventListener('load',e=>{const i=e.target;if(i.tagName==='IMG'){i.classList.remove('ld');void i.offsetWidth;i.classList.add('ld')}},true);
+if(matchMedia('(hover:hover)').matches){
+  main.addEventListener('pointermove',e=>{
+    const c=e.target.closest&&e.target.closest('.card');if(!c)return;
+    const r=c.getBoundingClientRect(),x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height;
+    c.style.setProperty('--rx',((.5-y)*16).toFixed(1)+'deg');c.style.setProperty('--ry',((x-.5)*16).toFixed(1)+'deg');
+    c.style.setProperty('--mx',x*100+'%');c.style.setProperty('--my',y*100+'%');
+  });
+  main.addEventListener('pointerout',e=>{
+    const c=e.target.closest&&e.target.closest('.card');
+    if(c&&!c.contains(e.relatedTarget)){c.style.setProperty('--rx','0deg');c.style.setProperty('--ry','0deg')}
+  });
+}
+
+/* boot-up screen (once per session, click to skip) */
+if(!calm&&!sessionStorage.getItem('boot')){
+  sessionStorage.setItem('boot',1);
+  const b=document.createElement('div');b.id='boot';
+  b.innerHTML='<div class="bl"><span class="lens"></span><div class="bt"></div></div>';document.body.append(b);
+  let skip=false;
+  const end=()=>{if(b.classList.contains('out'))return;b.classList.add('out');setTimeout(()=>b.remove(),900)};
+  b.onclick=()=>{skip=true;end()};
+  (async()=>{
+    const t=b.querySelector('.bt');
+    for(const L of ['> POKéDEX OS ONLINE','> LINKING POKéAPI ........ OK','> '+list.length+' ENTRIES INDEXED','> 9 REGIONS MAPPED','> READY.']){
+      if(skip)return;const d=document.createElement('div');t.append(d);await typeInto(d,L,18);await sleep(180);
+    }
+    await sleep(500);end();
+  })();
+}
+})();
+</script>
 </body></html>
